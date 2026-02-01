@@ -1,119 +1,239 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const spinner = document.getElementById('spinner');
-    const spinButton = document.getElementById('spinButton');
-    const resultCard = document.getElementById('resultCard');
-    const resultEmoji = document.getElementById('resultEmoji');
-    const resultText = document.getElementById('resultText');
-    const resultInstruction = document.getElementById('resultInstruction');
-    const rulesToggle = document.getElementById('rulesToggle');
-    const rulesContent = document.getElementById('rulesContent');
-    const rulesArrow = document.getElementById('rulesArrow');
-    const historySection = document.getElementById('historySection');
-    const historyList = document.getElementById('historyList');
-    const confettiContainer = document.getElementById('confettiContainer');
+const SUPABASE_URL = 'https://mldxyiidrjkvnvqkfxus.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sZHh5aWlkcmprdm52cWtmeHVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5MjE0MTgsImV4cCI6MjA4NTQ5NzQxOH0.sG-TGA1SHb4mrc_IgupbhRt9knGPloVWxzipIi7ruI8';
 
-    let isSpinning = false;
-    let spinCount = 0;
-    let currentRotation = 0;
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    rulesToggle.addEventListener('click', () => {
-        rulesContent.classList.toggle('show');
-        rulesArrow.classList.toggle('rotated');
-    });
+let currentPlayer = null;
+let currentType = null;
+let currentRotation = 0;
+let isSpinning = false;
 
-    spinButton.addEventListener('click', () => {
-        if (isSpinning) return;
-        spin();
-    });
+const joinScreen = document.getElementById('joinScreen');
+const gameScreen = document.getElementById('gameScreen');
+const playerNameInput = document.getElementById('playerName');
+const joinButton = document.getElementById('joinButton');
+const playerCountJoin = document.getElementById('playerCountJoin');
+const currentPlayerName = document.getElementById('currentPlayerName');
+const playerCount = document.getElementById('playerCount');
+const playersList = document.getElementById('playersList');
+const spinner = document.getElementById('spinner');
+const spinButton = document.getElementById('spinButton');
+const resultCard = document.getElementById('resultCard');
+const resultType = document.getElementById('resultType');
+const resultChallenge = document.getElementById('resultChallenge');
+const nextChallengeBtn = document.getElementById('nextChallengeBtn');
+const truthList = document.getElementById('truthList');
+const dareList = document.getElementById('dareList');
+const truthCount = document.getElementById('truthCount');
+const dareCount = document.getElementById('dareCount');
+const tabs = document.querySelectorAll('.tab');
 
-    function spin() {
-        isSpinning = true;
-        spinButton.disabled = true;
-        spinCount++;
+async function initApp() {
+    renderChallenges();
+    setupTabs();
+    await loadPlayers();
+    subscribeToPlayers();
 
-        resultCard.classList.remove('truth', 'dare');
-        resultEmoji.textContent = '🎰';
-        resultText.textContent = 'Đang quay...';
-        resultInstruction.textContent = 'Chờ kết quả nhé!';
-
-        const extraSpins = 5 + Math.floor(Math.random() * 3);
-        const randomAngle = Math.random() * 360;
-        const totalRotation = extraSpins * 360 + randomAngle;
-        currentRotation += totalRotation;
-
-        spinner.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
-        spinner.style.transform = `rotate(${currentRotation}deg)`;
-
-        setTimeout(() => {
-            const normalizedAngle = currentRotation % 360;
-            const isTruth = normalizedAngle >= 90 && normalizedAngle < 270;
-
-            showResult(isTruth);
-            addToHistory(isTruth);
-            createConfetti();
-
-            isSpinning = false;
-            spinButton.disabled = false;
-        }, 4000);
-    }
-
-    function showResult(isTruth) {
-        if (isTruth) {
-            resultCard.classList.add('truth');
-            resultEmoji.textContent = '🤔';
-            resultText.textContent = 'THẬT!';
-            resultInstruction.textContent = 'Hãy hỏi một câu hỏi về sự thật!';
+    const savedPlayer = localStorage.getItem('ech_player');
+    if (savedPlayer) {
+        const player = JSON.parse(savedPlayer);
+        const exists = await checkPlayerExists(player.id);
+        if (exists) {
+            currentPlayer = player;
+            showGameScreen();
         } else {
-            resultCard.classList.add('dare');
-            resultEmoji.textContent = '😈';
-            resultText.textContent = 'THÁCH!';
-            resultInstruction.textContent = 'Hãy đưa ra một thử thách!';
-        }
-
-        resultCard.style.animation = 'none';
-        resultCard.offsetHeight;
-        resultCard.style.animation = 'popIn 0.5s ease';
-    }
-
-    function addToHistory(isTruth) {
-        historySection.classList.add('show');
-
-        const historyItem = document.createElement('div');
-        historyItem.className = `history-item ${isTruth ? 'truth' : 'dare'}`;
-        historyItem.innerHTML = `
-            <span class="history-item-number">${spinCount}</span>
-            <span>${isTruth ? 'Thật' : 'Thách'}</span>
-        `;
-
-        historyList.insertBefore(historyItem, historyList.firstChild);
-
-        if (historyList.children.length > 10) {
-            historyList.removeChild(historyList.lastChild);
+            localStorage.removeItem('ech_player');
         }
     }
+}
 
-    function createConfetti() {
-        const colors = ['#F5B800', '#4ECDC4', '#FF6B6B', '#FFD54F', '#7EDCD5', '#FF8E8E'];
-        const shapes = ['●', '■', '▲', '★', '♦'];
+function renderChallenges() {
+    truthList.innerHTML = TRUTH_CHALLENGES.map(c => 
+        `<div class="challenge-item">${c}</div>`
+    ).join('');
+    
+    dareList.innerHTML = DARE_CHALLENGES.map(c => 
+        `<div class="challenge-item">${c}</div>`
+    ).join('');
 
-        for (let i = 0; i < 50; i++) {
-            const confetti = document.createElement('div');
-            confetti.className = 'confetti';
-            confetti.style.left = Math.random() * 100 + 'vw';
-            confetti.style.color = colors[Math.floor(Math.random() * colors.length)];
-            confetti.style.fontSize = (Math.random() * 12 + 8) + 'px';
-            confetti.textContent = shapes[Math.floor(Math.random() * shapes.length)];
-            confetti.style.animation = `confettiFall ${Math.random() * 2 + 2}s linear forwards`;
-            confetti.style.animationDelay = Math.random() * 0.5 + 's';
+    truthCount.textContent = TRUTH_CHALLENGES.length;
+    dareCount.textContent = DARE_CHALLENGES.length;
+}
 
-            confettiContainer.appendChild(confetti);
+function setupTabs() {
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
 
-            setTimeout(() => {
-                confetti.remove();
-            }, 4500);
-        }
+            const tabId = tab.dataset.tab;
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabId}List`).classList.add('active');
+        });
+    });
+}
+
+async function checkPlayerExists(playerId) {
+    const { data } = await supabase
+        .from('players')
+        .select('id')
+        .eq('id', playerId)
+        .single();
+    return !!data;
+}
+
+async function loadPlayers() {
+    const { data, error } = await supabase
+        .from('players')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+    if (error) {
+        console.error('Error loading players:', error);
+        return;
     }
 
-    spinner.style.transform = `rotate(${Math.random() * 360}deg)`;
-    currentRotation = parseFloat(spinner.style.transform.replace('rotate(', '').replace('deg)', '')) || 0;
+    updatePlayersList(data || []);
+}
+
+function updatePlayersList(players) {
+    playerCountJoin.textContent = players.length;
+    playerCount.textContent = players.length;
+
+    playersList.innerHTML = players.map(p => `
+        <div class="player-item ${currentPlayer && p.id === currentPlayer.id ? 'current' : ''}">
+            <div class="player-avatar">${p.name.charAt(0).toUpperCase()}</div>
+            <div class="player-info">
+                <div class="player-info-name">${escapeHtml(p.name)}</div>
+                <div class="player-status">Online</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function subscribeToPlayers() {
+    supabase
+        .channel('players')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, () => {
+            loadPlayers();
+        })
+        .subscribe();
+}
+
+async function joinGame(name) {
+    const { data, error } = await supabase
+        .from('players')
+        .insert([{ name: name.trim() }])
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Error joining game:', error);
+        alert('Có lỗi xảy ra, vui lòng thử lại!');
+        return null;
+    }
+
+    return data;
+}
+
+function showGameScreen() {
+    joinScreen.classList.add('hidden');
+    gameScreen.classList.add('active');
+    currentPlayerName.textContent = currentPlayer.name;
+    loadPlayers();
+}
+
+joinButton.addEventListener('click', async () => {
+    const name = playerNameInput.value.trim();
+    if (!name) {
+        playerNameInput.focus();
+        return;
+    }
+
+    joinButton.disabled = true;
+    joinButton.textContent = 'Đang tham gia...';
+
+    const player = await joinGame(name);
+    if (player) {
+        currentPlayer = player;
+        localStorage.setItem('ech_player', JSON.stringify(player));
+        showGameScreen();
+    }
+
+    joinButton.disabled = false;
+    joinButton.textContent = 'Tham gia ngay';
 });
+
+playerNameInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        joinButton.click();
+    }
+});
+
+spinButton.addEventListener('click', () => {
+    if (isSpinning) return;
+    spin();
+});
+
+function spin() {
+    isSpinning = true;
+    spinButton.disabled = true;
+
+    resultCard.classList.remove('truth', 'dare');
+    resultType.textContent = 'Đang quay...';
+    resultChallenge.textContent = '🎰';
+
+    const extraSpins = 5 + Math.floor(Math.random() * 3);
+    const randomAngle = Math.random() * 360;
+    const totalRotation = extraSpins * 360 + randomAngle;
+    currentRotation += totalRotation;
+
+    spinner.style.transform = `rotate(${currentRotation}deg)`;
+
+    setTimeout(() => {
+        const normalizedAngle = currentRotation % 360;
+        const isTruth = normalizedAngle >= 90 && normalizedAngle < 270;
+        
+        currentType = isTruth ? 'truth' : 'dare';
+        showRandomChallenge();
+
+        isSpinning = false;
+        spinButton.disabled = false;
+    }, 4000);
+}
+
+function showRandomChallenge() {
+    const challenges = currentType === 'truth' ? TRUTH_CHALLENGES : DARE_CHALLENGES;
+    const randomIndex = Math.floor(Math.random() * challenges.length);
+    const challenge = challenges[randomIndex];
+
+    resultCard.classList.remove('truth', 'dare');
+    resultCard.classList.add(currentType);
+    resultType.textContent = currentType === 'truth' ? '🤔 Thật' : '😈 Thách';
+    resultChallenge.textContent = challenge;
+}
+
+nextChallengeBtn.addEventListener('click', () => {
+    if (currentType) {
+        showRandomChallenge();
+    }
+});
+
+window.addEventListener('beforeunload', async () => {
+    if (currentPlayer) {
+        await supabase
+            .from('players')
+            .delete()
+            .eq('id', currentPlayer.id);
+    }
+});
+
+initApp();

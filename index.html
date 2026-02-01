@@ -1,116 +1,128 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="vi">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Thật hay Thách - ECH Party Game 🎉</title>
-    <link rel="icon" type="image/jpeg" href="public/logo.jpg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <div class="container">
-      <header class="header">
-        <img src="public/logo.jpg" alt="ECH Logo" class="logo" />
-        <h1 class="title">🎲 Thật hay Thách 🎲</h1>
-        <p class="subtitle">Trò chơi vui nhộn cho buổi offline ECH</p>
-      </header>
+    <link rel="icon" type="image/jpeg" href="public/logo.jpg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app">
+        <div class="join-screen" id="joinScreen">
+            <div class="join-card">
+                <img src="public/logo.jpg" alt="ECH Logo" class="join-logo">
+                <h1 class="join-title">Thật hay Thách</h1>
+                <p class="join-subtitle">ECH Party Game</p>
+                
+                <div class="join-form">
+                    <input 
+                        type="text" 
+                        id="playerName" 
+                        class="join-input" 
+                        placeholder="Nhập tên của bạn..."
+                        maxlength="20"
+                        autocomplete="off"
+                    >
+                    <button class="join-button" id="joinButton">
+                        Tham gia ngay
+                    </button>
+                </div>
+                
+                <div class="online-players" id="onlinePlayersJoin">
+                    <span class="online-dot"></span>
+                    <span id="playerCountJoin">0</span> người đang chơi
+                </div>
+            </div>
+        </div>
 
-      <main class="main-content">
-        <section class="game-rules">
-          <div class="rules-toggle" id="rulesToggle">
-            <span class="rules-icon">📋</span>
-            <span>Thể lệ trò chơi</span>
-            <span class="arrow" id="rulesArrow">▼</span>
-          </div>
-          <div class="rules-content" id="rulesContent">
-            <div class="rule-item">
-              <div class="rule-number">1</div>
-              <div class="rule-text">
-                <strong>Giai đoạn chuẩn bị:</strong>
-                Bốc thăm bằng hình thức quay random "Thật" hoặc "Thách"
-              </div>
-            </div>
-            <div class="rule-item">
-              <div class="rule-number">2</div>
-              <div class="rule-text">
-                <strong>Giai đoạn thực hiện:</strong>
-                Lần lượt từng thành viên sẽ chọn 1 người, đưa ra 1 thử thách/1
-                sự thật cho người được chọn
-              </div>
-            </div>
-            <div class="rule-item">
-              <div class="rule-number">3</div>
-              <div class="rule-text">
-                <strong>Giai đoạn chia sẻ:</strong>
-                Người được chọn thực hiện hoạt động đúng với nội dung lá thăm
-                trên tinh thần vui vẻ, tự nguyện
-              </div>
-            </div>
-            <div class="warning-box">
-              <span class="warning-icon">⚠️</span>
-              <span
-                >Lưu ý: Không đề cập đến các vấn đề nhạy cảm, phản cảm. Hãy tạo
-                bầu không khí vui vẻ, hòa đồng!</span
-              >
-            </div>
-          </div>
-        </section>
+        <div class="game-screen" id="gameScreen">
+            <header class="header">
+                <div class="header-left">
+                    <img src="public/logo.jpg" alt="ECH Logo" class="logo">
+                    <div class="header-text">
+                        <h1 class="title">Thật hay Thách</h1>
+                        <p class="subtitle">ECH Party Game</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="current-player">
+                        <span class="player-label">Bạn:</span>
+                        <span class="player-name" id="currentPlayerName">-</span>
+                    </div>
+                </div>
+            </header>
 
-        <section class="spinner-section">
-          <div class="spinner-container" id="spinnerContainer">
-            <div class="spinner" id="spinner">
-              <div class="spinner-half truth">
-                <span>THẬT</span>
-              </div>
-              <div class="spinner-half dare">
-                <span>THÁCH</span>
-              </div>
-              <div class="spinner-center">
-                <span>?</span>
-              </div>
-            </div>
-            <div class="pointer"></div>
-          </div>
+            <main class="main-content">
+                <section class="players-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Người chơi online</h2>
+                        <span class="player-count" id="playerCount">0</span>
+                    </div>
+                    <div class="players-list" id="playersList"></div>
+                </section>
 
-          <button class="spin-button" id="spinButton">
-            <span class="button-icon">🎰</span>
-            <span>QUAY NGAY!</span>
-          </button>
-        </section>
+                <section class="game-section">
+                    <div class="spinner-area">
+                        <div class="spinner-container" id="spinnerContainer">
+                            <div class="spinner" id="spinner">
+                                <div class="spinner-half truth">
+                                    <span>THẬT</span>
+                                </div>
+                                <div class="spinner-half dare">
+                                    <span>THÁCH</span>
+                                </div>
+                                <div class="spinner-center">?</div>
+                            </div>
+                            <div class="pointer"></div>
+                        </div>
 
-        <section class="result-section" id="resultSection">
-          <div class="result-card" id="resultCard">
-            <div class="result-emoji" id="resultEmoji">🎉</div>
-            <div class="result-text" id="resultText">
-              Kết quả sẽ hiển thị ở đây!
-            </div>
-            <div class="result-instruction" id="resultInstruction">
-              Nhấn nút QUAY NGAY! để bắt đầu
-            </div>
-          </div>
-        </section>
+                        <button class="spin-button" id="spinButton">
+                            <span>Quay ngay!</span>
+                        </button>
+                    </div>
 
-        <section class="history-section" id="historySection">
-          <h3 class="history-title">📜 Lịch sử quay</h3>
-          <div class="history-list" id="historyList"></div>
-        </section>
-      </main>
+                    <div class="result-area" id="resultArea">
+                        <div class="result-card" id="resultCard">
+                            <div class="result-type" id="resultType">Chờ quay...</div>
+                            <div class="result-challenge" id="resultChallenge">
+                                Nhấn nút "Quay ngay!" để bắt đầu
+                            </div>
+                            <button class="next-challenge-btn" id="nextChallengeBtn">
+                                Đổi thử thách khác
+                            </button>
+                        </div>
+                    </div>
+                </section>
 
-      <footer class="footer">
-        <div class="confetti-container" id="confettiContainer"></div>
-        <p class="footer-text">
-          🎉 Chúc mọi người có buổi off vui vẻ, đáng nhớ và cười thật nhiều! 🎉
-        </p>
-        <p class="footer-credit">Made with ❤️ by ECH</p>
-      </footer>
+                <section class="challenges-section">
+                    <div class="tabs">
+                        <button class="tab active" data-tab="truth">
+                            Thật <span class="tab-count" id="truthCount">0</span>
+                        </button>
+                        <button class="tab" data-tab="dare">
+                            Thách <span class="tab-count" id="dareCount">0</span>
+                        </button>
+                    </div>
+                    
+                    <div class="challenges-list" id="challengesList">
+                        <div class="tab-content active" id="truthList"></div>
+                        <div class="tab-content" id="dareList"></div>
+                    </div>
+                </section>
+            </main>
+
+            <footer class="footer">
+                <p>🎉 Chúc buổi offline vui vẻ! 🎉</p>
+            </footer>
+        </div>
     </div>
 
+    <script src="challenges.js"></script>
     <script src="script.js"></script>
-  </body>
+</body>
 </html>
